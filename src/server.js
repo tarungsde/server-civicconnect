@@ -32,6 +32,5 @@ app.get('/api/health', (req, res) => {
 const PORT = process.env.PORT;
 
 app.listen(PORT, (req, res) =>{
-  res.json({ status: 'OK', message: 'Civic Issues API is running' });
   console.log(`App is running on port http://localhost:${PORT}.`);
 });
