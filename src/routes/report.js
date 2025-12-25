@@ -69,6 +69,38 @@ router.get('/', async (req, res) => {
   }
 });
 
+router.put('/:id', authenticate, async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    if (report.reportedBy.toString() !== req.userId) {
+      return res.status(403).json({ error: 'Not authorized to edit this report' });
+    }
+
+    const allowedUpdates = ['title', 'description', 'category', 'urgency'];
+    allowedUpdates.forEach(field => {
+      if (req.body[field] !== undefined) {
+        report[field] = req.body[field];
+      }
+    });
+
+    report.updatedAt = new Date();
+    await report.save();
+    
+    res.json({ 
+      message: 'Report updated successfully', 
+      report 
+    });
+
+  } catch (error) {
+    console.error('Report update error:', error);
+    res.status(500).json({ error: 'Failed to update report' });
+  }
+})
+
 // Update report status (admin feature for later)
 router.patch('/:id/status', authenticate, async (req, res) => {
   try {
