@@ -1,9 +1,26 @@
 import express from 'express';
+import multer from 'multer';
+import cloudinary from 'cloudinary';
 import authenticate from '../middleware/auth.js';
 import Report from '../models/Report.js';
 import User from '../models/User.js';
+import dotenv from 'dotenv';
+
+dotenv.config();
 
 const router = express.Router();
+const storage = multer.memoryStorage();
+
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024}
+});
+
+cloudinary.v2.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+})
 
 // Create a new report
 router.post('/', authenticate, async (req, res) => {
@@ -117,6 +134,35 @@ router.patch('/:id/status', authenticate, async (req, res) => {
     res.json({ message: 'Report status updated', report });
   } catch (error) {
     res.status(500).json({ error: 'Failed to update report' });
+  }
+});
+
+// Image upload endpoint
+router.post('/upload', authenticate, upload.array('images', 5), async (req, res) => {
+  try {
+    const urls = [];
+    
+    for (const file of req.files) {
+      const result = await new Promise((resolve, reject) => {
+        cloudinary.v2.uploader.upload_stream(
+          {
+            folder: 'civic-issues',
+            resource_type: 'auto'
+          },
+          (error, result) => {
+            if (error) reject(error);
+            else resolve(result);
+          }
+        ).end(file.buffer);
+      });
+      
+      urls.push(result.secure_url);
+    }
+    
+    res.json({ urls });
+  } catch (error) {
+    console.error('Upload error:', error);
+    res.status(500).json({ error: 'Failed to upload images' });
   }
 });
 
