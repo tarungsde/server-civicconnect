@@ -73,10 +73,11 @@ router.get('/', async (req, res) => {
         }
       };
     }
-    
+
     const reports = await Report.find(query)
       .populate('reportedBy', 'name picture')
-      .sort({ createdAt: -1 })
+      .select('title description category urgency latitude longitude photos status createdAt upvoteCount')
+      .sort({ upvoteCount: -1, createdAt: -1 }) // Sort by upvotes first
       .limit(100);
     
     res.json({ reports });
@@ -163,6 +164,68 @@ router.post('/upload', authenticate, upload.array('images', 5), async (req, res)
   } catch (error) {
     console.error('Upload error:', error);
     res.status(500).json({ error: 'Failed to upload images' });
+  }
+});
+
+// Upvote a report
+router.post('/:id/upvote', authenticate, async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+
+    const alreadyUpvoted = report.upvotes.includes(req.userId);
+
+    if (alreadyUpvoted) {
+      report.upvotes = report.upvotes.filter(
+        userId => userId.toString() !== req.userId
+      );
+    
+      report.upvoteCount = Math.max(0, report.upvoteCount - 1);
+      await report.save();
+
+      return res.json({ 
+        message: 'Upvote removed', 
+        upvoted: false,
+        upvoteCount: report.upvoteCount 
+      });
+    }
+
+    report.upvotes.push(req.userId);
+    report.upvoteCount += 1;
+    await report.save();
+    
+    res.json({ 
+      message: 'Report upvoted', 
+      upvoted: true,
+      upvoteCount: report.upvoteCount 
+    });    
+
+  } catch (error) {
+    console.error('Upvote error:', error);
+    res.status(500).json({ error: 'Failed to upvote report' });
+  }
+});
+
+router.get('/:id/upvote/check', authenticate, async (req, res) => {
+  try {
+    const report = await Report.findById(req.params.id);
+    
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+    
+    const hasUpvoted = report.upvotes.some(
+      userId => userId.toString() === req.userId
+    );
+    
+    res.json({ upvoted: hasUpvoted });
+    
+  } catch (error) {
+    console.error('Check upvote error:', error);
+    res.status(500).json({ error: 'Failed to check upvote status' });
   }
 });
 

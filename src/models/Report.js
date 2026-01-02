@@ -38,7 +38,7 @@ const reportSchema = new mongoose.Schema(
     reporterName: String,
     status: {
       type: String,
-      enum: ['pending', 'in-progress', 'resolved', 'rejected'],
+      enum: ['pending', 'in-progress', 'resolved', 'false report'],
       default: 'pending'
     },
     photos: [String], // Array of image URLs
@@ -49,6 +49,14 @@ const reportSchema = new mongoose.Schema(
     updatedAt: {
       type: Date,
       default: Date.now
+    },
+    upvotes: [{
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    }],
+    upvoteCount: {
+      type: Number,
+      default: 0
     }
   },
   {
