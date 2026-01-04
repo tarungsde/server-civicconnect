@@ -50,6 +50,10 @@ const reportSchema = new mongoose.Schema(
       type: Date,
       default: Date.now
     },
+    updatedBy: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User'
+    },
     upvotes: [{
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User'
@@ -57,7 +61,18 @@ const reportSchema = new mongoose.Schema(
     upvoteCount: {
       type: Number,
       default: 0
-    }
+    },
+    statusHistory: [{
+      status: String,
+      changedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      changedAt: Date,
+      notes: String
+    }],
+    priority: {
+      type: String,
+      enum: ['low', 'medium', 'high', 'critical'],
+      default: 'medium'
+    },
   },
   {
     collection: "Reports"

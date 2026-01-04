@@ -1,0 +1,144 @@
+import express from 'express';
+import isAdmin from '../middleware/admin.js';
+import Report from '../models/Report.js';
+
+const router = express.Router();
+
+// Get all reports (admin view with filters)
+router.get('/reports', isAdmin, async (req, res) => {
+  try {
+    const { 
+      status, 
+      department, 
+      category, 
+      dateFrom, 
+      dateTo,
+      page = 1,
+      limit = 50 
+    } = req.query;
+    
+    const query = {};
+    
+    // Admin filters
+    if (status) query.status = status;
+    if (category) query.category = category;
+    
+    // Date range filter
+    if (dateFrom || dateTo) {
+      query.createdAt = {};
+      if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) query.createdAt.$lte = new Date(dateTo);
+    }
+    
+    const reports = await Report.find(query)
+      .populate('reportedBy', 'name email')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+    
+    const total = await Report.countDocuments(query);
+    
+    res.json({
+      reports,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+    
+  } catch (error) {
+    console.error('Admin reports error:', error);
+    res.status(500).json({ error: 'Failed to fetch reports' });
+  }
+});
+
+// Update report status (admin only)
+router.patch('/reports/:id/status', isAdmin, async (req, res) => {
+  try {
+    const { status, adminNotes } = req.body;
+    
+    const report = await Report.findById(req.params.id);
+    
+    if (!report) {
+      return res.status(404).json({ error: 'Report not found' });
+    }
+    
+    // Add to report history
+    report.statusHistory = report.statusHistory || [];
+    report.statusHistory.push({
+      status: status,
+      changedBy: req.userId,
+      changedAt: new Date(),
+      notes: adminNotes
+    });
+    
+    // Update status
+    report.status = status;
+    report.updatedAt = new Date();
+    report.updatedBy = req.userId;
+    
+    await report.save();
+    
+    res.json({ 
+      message: 'Status updated successfully',
+      report 
+    });
+    
+  } catch (error) {
+    console.error('Status update error:', error);
+    res.status(500).json({ error: 'Failed to update status' });
+  }
+});
+
+// Get statistics dashboard
+router.get('/stats', isAdmin, async (req, res) => {
+  try {
+    const [statusStats, categoryStats, urgencyStats] = await Promise.all([
+      // Status distribution
+      Report.aggregate([
+        { $group: { _id: '$status', count: { $sum: 1 } } }
+      ]),
+      
+      // Category distribution
+      Report.aggregate([
+        { $group: { _id: '$category', count: { $sum: 1 } } }
+      ]),
+      
+      // Urgency distribution
+      Report.aggregate([
+        { $group: { _id: '$urgency', count: { $sum: 1 } } }
+      ]),
+    ]);
+    
+    // Recent activity (last 7 days)
+    const weekAgo = new Date();
+    weekAgo.setDate(weekAgo.getDate() - 7);
+    
+    const recentActivity = await Report.aggregate([
+      { $match: { createdAt: { $gte: weekAgo } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt' } },
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { _id: 1 } }
+    ]);
+    
+    res.json({
+      statusStats,
+      categoryStats,
+      urgencyStats,
+      recentActivity,
+      totalReports: await Report.countDocuments()
+    });
+    
+  } catch (error) {
+    console.error('Stats error:', error);
+    res.status(500).json({ error: 'Failed to fetch statistics' });
+  }
+});
+
+export default router;

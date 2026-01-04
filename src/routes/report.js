@@ -119,25 +119,6 @@ router.put('/:id', authenticate, async (req, res) => {
   }
 })
 
-// Update report status (admin feature for later)
-router.patch('/:id/status', authenticate, async (req, res) => {
-  try {
-    const report = await Report.findById(req.params.id);
-    
-    if (!report) {
-      return res.status(404).json({ error: 'Report not found' });
-    }
-    
-    report.status = req.body.status;
-    report.updatedAt = new Date();
-    await report.save();
-    
-    res.json({ message: 'Report status updated', report });
-  } catch (error) {
-    res.status(500).json({ error: 'Failed to update report' });
-  }
-});
-
 // Image upload endpoint
 router.post('/upload', authenticate, upload.array('images', 5), async (req, res) => {
   try {
