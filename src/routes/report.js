@@ -56,8 +56,8 @@ router.get('/my-reports', authenticate, async (req, res) => {
 // Get all reports (for map display)
 router.get('/', async (req, res) => {
   try {
-    const { latitude, longitude, radius = 5000 } = req.query;
-    
+    // const { latitude, longitude, radius = 5000 } = req.query;
+    const { latitude, longitude } = req.query;
     let query = {};
     
     // If coordinates provided, filter by location

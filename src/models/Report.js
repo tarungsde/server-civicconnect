@@ -38,7 +38,7 @@ const reportSchema = new mongoose.Schema(
     reporterName: String,
     status: {
       type: String,
-      enum: ['pending', 'in-progress', 'resolved', 'false report'],
+      enum: ['Pending', 'In-progress', 'Resolved', 'Rejected'],
       default: 'pending'
     },
     photos: [String], // Array of image URLs

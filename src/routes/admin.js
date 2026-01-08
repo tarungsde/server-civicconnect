@@ -8,8 +8,7 @@ const router = express.Router();
 router.get('/reports', isAdmin, async (req, res) => {
   try {
     const { 
-      status, 
-      department, 
+      status,
       category, 
       dateFrom, 
       dateTo,
@@ -54,10 +53,11 @@ router.get('/reports', isAdmin, async (req, res) => {
   }
 });
 
-// Update report status (admin only)
+// Update report status
 router.patch('/reports/:id/status', isAdmin, async (req, res) => {
   try {
-    const { status, adminNotes } = req.body;
+    let { status, adminNotes } = req.body;
+    if(!adminNotes) adminNotes = '';
     
     const report = await Report.findById(req.params.id);
     
