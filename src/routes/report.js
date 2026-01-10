@@ -57,21 +57,43 @@ router.get('/my-reports', authenticate, async (req, res) => {
 router.get('/', async (req, res) => {
   try {
     // const { latitude, longitude, radius = 5000 } = req.query;
-    const { latitude, longitude } = req.query;
+    // const { latitude, longitude } = req.query;
     let query = {};
     
-    // If coordinates provided, filter by location
-    if (latitude && longitude) {
-      query = {
-        latitude: { 
-          $gte: parseFloat(latitude) - 0.1, 
-          $lte: parseFloat(latitude) + 0.1 
-        },
-        longitude: { 
-          $gte: parseFloat(longitude) - 0.1, 
-          $lte: parseFloat(longitude) + 0.1 
-        }
-      };
+    // // If coordinates provided, filter by location
+    // if (latitude && longitude) {
+    //   query = {
+    //     latitude: { 
+    //       $gte: parseFloat(latitude) - 0.1, 
+    //       $lte: parseFloat(latitude) + 0.1 
+    //     },
+    //     longitude: { 
+    //       $gte: parseFloat(longitude) - 0.1, 
+    //       $lte: parseFloat(longitude) + 0.1 
+    //     }
+    //   };
+    // }
+
+    console.log(req.query);
+
+    const { 
+      status,
+      category, 
+      dateFrom, 
+      dateTo,
+      page = 1,
+      limit = 50 
+    } = req.query;
+    
+    // Admin filters
+    if (status) query.status = status;
+    if (category) query.category = category;
+    
+    // Date range filter
+    if (dateFrom || dateTo) {
+      query.createdAt = {};
+      if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) query.createdAt.$lte = new Date(dateTo);
     }
 
     const reports = await Report.find(query)
