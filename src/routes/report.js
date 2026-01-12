@@ -85,8 +85,9 @@ router.get('/', async (req, res) => {
       limit = 50 
     } = req.query;
     
-    // Admin filters
     if (status) query.status = status;
+    else query.status = { $in: ['Pending', 'In-progress'] };
+
     if (category) query.category = category;
     
     // Date range filter
