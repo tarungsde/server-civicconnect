@@ -2,6 +2,10 @@ import express from 'express';
 import jwt from 'jsonwebtoken';
 import { OAuth2Client } from 'google-auth-library';
 import User from '../models/User.js';
+import dotenv from 'dotenv';
+import { sendWelcomeEmail } from '../scripts/mailSender.js';
+
+dotenv.config();
 
 const client = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 const router = express.Router();
@@ -20,10 +24,13 @@ router.post('/google', async (req, res) => {
     const payload = ticket.getPayload();
     const { sub: googleId, email, name, picture } = payload;
 
+    let isNewUser = false;
+
     // Find or create user
     let user = await User.findOne({ email });
     
     if (!user) {
+      isNewUser = true;
       user = new User({
         googleId,
         email,
@@ -36,6 +43,14 @@ router.post('/google', async (req, res) => {
     }
     
     await user.save();
+
+    if (isNewUser) {
+      try {
+        await sendWelcomeEmail(user.email, user.name);
+      } catch (error) {
+        console.error('Error sending welcome email:', error);
+      }
+    }
 
     // Create JWT token
     const jwtToken = jwt.sign(

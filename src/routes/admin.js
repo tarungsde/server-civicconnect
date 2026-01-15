@@ -1,6 +1,7 @@
 import express from 'express';
 import isAdmin from '../middleware/admin.js';
 import Report from '../models/Report.js';
+import { sendStatusUpdateEmail } from '../scripts/mailSender.js';
 
 const router = express.Router();
 
@@ -80,6 +81,20 @@ router.patch('/reports/:id/status', isAdmin, async (req, res) => {
     report.updatedBy = req.userId;
     
     await report.save();
+
+    if (report.reportedBy && report.reporterEmail) {
+      try {
+        await sendStatusUpdateEmail(
+          report.reporterEmail,
+          report.reporterName,
+          report,
+          adminNotes
+        );
+        console.log(`Status update email sent to ${report.reporterEmail}`);
+      } catch (emailError) {
+        console.error('Failed to send status update email:', emailError);
+      }
+    }
     
     res.json({ 
       message: 'Status updated successfully',
