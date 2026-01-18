@@ -5,6 +5,7 @@ import authenticate from '../middleware/auth.js';
 import Report from '../models/Report.js';
 import User from '../models/User.js';
 import dotenv from 'dotenv';
+import NodeGeoCoder from 'node-geocoder';
 import { sendConfirmationEmail } from '../scripts/mailSender.js';
 
 dotenv.config();
@@ -23,16 +24,39 @@ cloudinary.v2.config({
   api_secret: process.env.CLOUDINARY_API_SECRET
 })
 
+const options = {
+  provider: 'openstreetmap',
+  formatter: null,
+  language: 'en',
+}
+
+const geocoder = NodeGeoCoder(options);
+
+const reverseGeocode = async (latitude, longitude) => {
+  try {
+    const res = await geocoder.reverse({ lat: latitude, lon: longitude });
+    if (res.length === 0) {
+      console.log('No address found');
+      return null;
+    }
+    return res[0].formattedAddress;
+  } catch (error) {
+    console.error('Geocoding error:', error);
+    return null;
+  }
+};
+
 // Create a new report
 router.post('/', authenticate, async (req, res) => {
   try {
     const user = await User.findById(req.userId);
-    
+    const fetchedAddress = await reverseGeocode(req.body.latitude, req.body.longitude);
     const report = new Report({
       ...req.body,
       reportedBy: req.userId,
       reporterEmail: user.email,
-      reporterName: user.name
+      reporterName: user.name,
+      address: fetchedAddress,
     });
 
     await report.save();
@@ -82,8 +106,6 @@ router.get('/', async (req, res) => {
     //   };
     // }
 
-    console.log(req.query);
-
     const { 
       status,
       category, 
@@ -107,7 +129,7 @@ router.get('/', async (req, res) => {
 
     const reports = await Report.find(query)
       .populate('reportedBy', 'name picture')
-      .select('title description category urgency latitude longitude photos status createdAt upvoteCount')
+      .select('title description category urgency latitude longitude address photos status createdAt upvoteCount')
       .sort({ upvoteCount: -1, createdAt: -1 }) // Sort by upvotes first
       .limit(100);
     

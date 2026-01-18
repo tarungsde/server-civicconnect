@@ -29,6 +29,7 @@ const reportSchema = new mongoose.Schema(
       type: Number,
       required: true
     },
+    address: String,
     reportedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
