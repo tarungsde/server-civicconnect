@@ -115,7 +115,8 @@ router.get('/', async (req, res) => {
       limit = 50 
     } = req.query;
     
-    if (status) query.status = status;
+    if (status === '') {}
+    else if (status) query.status = status;
     else query.status = { $in: ['Pending', 'In-progress'] };
 
     if (category) query.category = category;
@@ -130,7 +131,7 @@ router.get('/', async (req, res) => {
     const reports = await Report.find(query)
       .populate('reportedBy', 'name picture')
       .select('title description category urgency latitude longitude address photos status createdAt upvoteCount')
-      .sort({ upvoteCount: -1, createdAt: -1 }) // Sort by upvotes first
+      // .sort({ upvoteCount: -1, createdAt: -1 }) // Sort by upvotes first
       .limit(100);
     
     res.json({ reports });
