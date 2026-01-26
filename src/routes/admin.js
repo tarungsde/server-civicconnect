@@ -20,7 +20,14 @@ router.get('/reports', isAdmin, async (req, res) => {
     const query = {};
     
     // Admin filters
-    if (status) query.status = status;
+    if (status) {
+      if (status.startsWith('!')) {
+        // Negative filter: status not equal to
+        query.status = { $ne: status.substring(1) };
+      } else {
+        query.status = status;
+      }
+    }
     if (category) query.category = category;
     
     // Date range filter

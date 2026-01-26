@@ -115,7 +115,7 @@ router.get('/', async (req, res) => {
       limit = 50 
     } = req.query;
     
-    if (status === '') {}
+    if (status === 'All') {}
     else if (status) query.status = status;
     else query.status = { $in: ['Pending', 'In-progress'] };
 
