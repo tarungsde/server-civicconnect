@@ -24,6 +24,7 @@
     "multer": "^2.0.2",
     "node-geocoder": "^4.4.1",
     "nodemailer": "^7.0.12",
-    "nodmeon": "^0.0.1-security"
+    "nodmeon": "^0.0.1-security",
+    "resend": "^6.9.1"
   }
 }
