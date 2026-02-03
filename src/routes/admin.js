@@ -6,7 +6,7 @@ import { sendStatusUpdateEmail } from '../scripts/mailSender.js';
 const router = express.Router();
 
 // Get all reports (admin view with filters)
-router.get('/reports', isAdmin, async (req, res) => {
+router.get('/reports', async (req, res) => {
   try {
     const { 
       status,
@@ -62,7 +62,7 @@ router.get('/reports', isAdmin, async (req, res) => {
 });
 
 // Update report status
-router.patch('/reports/:id/status', isAdmin, async (req, res) => {
+router.patch('/reports/:id/status', async (req, res) => {
   try {
     let { status, adminNotes } = req.body;
     if(!adminNotes) adminNotes = '';
@@ -115,7 +115,7 @@ router.patch('/reports/:id/status', isAdmin, async (req, res) => {
 });
 
 // Get statistics dashboard
-router.get('/stats', isAdmin, async (req, res) => {
+router.get('/stats', async (req, res) => {
   try {
     const [statusStats, categoryStats, urgencyStats] = await Promise.all([
       // Status distribution
